@@ -40,6 +40,7 @@ def lire_fichier_binaire(nom_fichier):
    with open(nom_fichier, 'rb') as file:
         return file.read()
 
+
 # -------------------------------------------    
 def padding_message(message):
 # -------------------------------------------    
@@ -68,7 +69,43 @@ def padding_message(message):
 def decoupage_blocs(message_bits, block_size=512):
 # -------------------------------------------    
 
+   '''
+      Découpage en blocs
+   '''
    return [message_bits[i:i + block_size] for i in range(0, len(message_bits), block_size)]
+
+
+# -------------------------------------------    
+def rotR(x, n):
+# -------------------------------------------    
+
+   '''
+      Rotation droite de x par n bits.
+   '''
+
+   return (x >> n) | (x << (32 - n)) & 0xFFFFFFFF
+
+
+# -------------------------------------------    
+def prepare_message_schedule(block):
+# -------------------------------------------    
+
+   '''
+      Prépare le message étendu de 64 mots pour un bloc de 512 bits.
+   '''
+
+   # w[0..15] = les mots de 32 bits du bloc actuel
+   w = [0] * 64
+   for i in range(16):
+      w[i] = int.from_bytes(block[i * 4:(i + 1) * 4], 'big')
+
+   # Calcul des mots w[16..63]
+   for i in range(16, 64):
+      sig0 = rotR(w[i-15], 7) ^ rotR(w[i-15], 18) ^ (w[i-15] >> 3)
+      sig1 = rotR(w[i-2], 17) ^ rotR(w[i-2], 19) ^ (w[i-2] >> 10)
+      w[i] = (w[i-16] + sig0 + w[i-7] + sig1) & 0xFFFFFFFF
+
+   return w
 
 
 # -------------------------------------------    
@@ -79,10 +116,18 @@ def main(filename):
    padded_message_bits = padding_message(message)
    blocks = decoupage_blocs(padded_message_bits)
 
+   # Initialisation des variables de travail avec les racines carrées de H
+   a, b, c, d, e, f, g, h = H
+
    print(f"Nombre total de blocs de 512 bits : {len(blocks)}")
    for i, block in enumerate(blocks):
       print(f"Bloc {i+1} : {block}")
 
+
+
+# -------------------------------------------    
+#     main()
+# -------------------------------------------    
 if __name__ == "__main__":
    filename = "test.bin"  # Remplacez par le nom de votre fichier
    main(filename)
