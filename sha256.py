@@ -28,3 +28,61 @@ K = [ 0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x
 
 print(H)
 print(K)
+
+# -------------------------------------------    
+def lire_fichier_binaire(nom_fichier):
+# -------------------------------------------    
+
+   '''
+      Lecture d'un fichier quelconque en entrée, au format binaire
+   '''
+    
+   with open(nom_fichier, 'rb') as file:
+        return file.read()
+
+# -------------------------------------------    
+def pad_message(message):
+# -------------------------------------------    
+
+   '''
+      Padding du message
+   '''
+
+   message_bits = ''.join(f'{byte:08b}' for byte in message)
+   original_length = len(message_bits)
+
+   # Ajouter un '1' à la fin du message
+   message_bits += '1'
+
+   # Ajouter des zéros jusqu'à ce que la longueur soit congrue à 448 bits modulo 512
+   while len(message_bits) % 512 != 448:
+      message_bits += '0'
+
+   # Ajouter la longueur originale du message sur 64 bits à la fin
+   message_bits += f'{original_length:064b}'
+
+   return message_bits
+
+
+# -------------------------------------------    
+def split_into_blocks(message_bits, block_size=512):
+# -------------------------------------------    
+
+   return [message_bits[i:i + block_size] for i in range(0, len(message_bits), block_size)]
+
+
+# -------------------------------------------    
+def main(filename):
+# -------------------------------------------    
+
+   message = lire_fichier_binaire(filename)
+   padded_message_bits = pad_message(message)
+   blocks = split_into_blocks(padded_message_bits)
+
+   print(f"Nombre total de blocs de 512 bits : {len(blocks)}")
+   for i, block in enumerate(blocks):
+      print(f"Bloc {i+1} : {block}")
+
+if __name__ == "__main__":
+   filename = "test.bin"  # Remplacez par le nom de votre fichier
+   main(filename)
