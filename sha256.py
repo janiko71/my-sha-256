@@ -41,7 +41,7 @@ def lire_fichier_binaire(nom_fichier):
         return file.read()
 
 # -------------------------------------------    
-def pad_message(message):
+def padding_message(message):
 # -------------------------------------------    
 
    '''
@@ -65,7 +65,7 @@ def pad_message(message):
 
 
 # -------------------------------------------    
-def split_into_blocks(message_bits, block_size=512):
+def decoupage_blocs(message_bits, block_size=512):
 # -------------------------------------------    
 
    return [message_bits[i:i + block_size] for i in range(0, len(message_bits), block_size)]
@@ -76,8 +76,8 @@ def main(filename):
 # -------------------------------------------    
 
    message = lire_fichier_binaire(filename)
-   padded_message_bits = pad_message(message)
-   blocks = split_into_blocks(padded_message_bits)
+   padded_message_bits = padding_message(message)
+   blocks = decoupage_blocs(padded_message_bits)
 
    print(f"Nombre total de blocs de 512 bits : {len(blocks)}")
    for i, block in enumerate(blocks):
