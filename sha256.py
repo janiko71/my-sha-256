@@ -13,7 +13,7 @@
 # Imports
 #
 
-import bitstring
+from bitstring import BitArray, Bits
 
 # 
 # Definition de la constante 'H'. Servira de base pour le hash initial 
@@ -59,7 +59,7 @@ def padding_message(message):
       Padding du message
    '''
 
-   message_bits = bitstring.BitArray(bytes=message)
+   message_bits = BitArray(bytes=message)
    original_length = len(message_bits)
 
    # Ajouter un '1' à la fin du message
@@ -70,7 +70,7 @@ def padding_message(message):
       message_bits.append('0x0')
 
    # Ajouter la longueur originale du message sur 64 bits à la fin
-   message_bits.append(bitstring.Bits(int64=original_length))
+   message_bits.append(Bits(int64=original_length))
 
    return message_bits
 
@@ -86,21 +86,18 @@ def decoupage_blocs(message_bits, block_size=512):
 
 
 # -------------------------------------------    
-def addition_32bits(a, b):
+def addition_32bits(*args):
 # -------------------------------------------    
 
-    # Convertir les entiers en BitArray de 32 bits
-    #a_bits = BitArray(a, length=32)
-    #b_bits = BitArray(b, length=32)
+    # Initialiser le résultat à 0
+    result = 0
     
-    # Effectuer l'addition
-    result = a.uint + b.uint
-    
-    # Appliquer un masque pour s'assurer que le résultat reste sur 32 bits
-    result_32bits = result & 0xFFFFFFFF
+    # Parcourir tous les arguments fournis
+    for num in args:
+       result = (result + num.uint) & 0xFFFFFFFF
     
     # Retourner le résultat en tant que BitArray de 32 bits
-    return bitstring.BitArray(uint=result_32bits, length=32)
+    return BitArray(uint=result, length=32)
 
 
 # -------------------------------------------    
@@ -125,27 +122,27 @@ def prepare_message_schedule(block):
       # Le type Bits est invariable, on recrée un BitArray qui lui est variable ("mutable") pour ne pas modifier la valeur originale de w[i-15] dans ce calcul.
       # Le 'ror' de 'bitstring' modifie la donnée passée en paramètre.
 
-      terme_1 = bitstring.BitArray(w[i-15])
+      terme_1 = BitArray(w[i-15])
       terme_1.ror(7)
 
-      terme_2 = bitstring.BitArray(w[i-15])
+      terme_2 = BitArray(w[i-15])
       terme_2.ror(18)
 
-      sig0 = terme_1 ^ terme_2 ^ (bitstring.BitArray(w[i-15]) >> 3)
+      sig0 = terme_1 ^ terme_2 ^ (BitArray(w[i-15]) >> 3)
 
       # Sigma 0 : rotation droite sur 17 bits de w[i-2] ⊕ rotation droite sur 19 bits de [i-2] ⊕ décalage à droite sur 10 bits de [i-2], ⊕ désignant le OU EXCLUSIF
       # Ici aussi on recrée un BitArray qui lui est variable ("mutable") pour ne pas modifier la valeur originale de w[i-15] dans ce calcul
 
-      terme_1 = bitstring.BitArray(w[i-2])
+      terme_1 = BitArray(w[i-2])
       terme_1.ror(17)
 
-      terme_2 = bitstring.BitArray(w[i-2])
+      terme_2 = BitArray(w[i-2])
       terme_2.ror(19)
 
-      sig1 = terme_1 ^ terme_2 ^ (bitstring.BitArray(w[i-2]) >> 10)
+      sig1 = terme_1 ^ terme_2 ^ (BitArray(w[i-2]) >> 10)
 
-      result = (bitstring.BitArray(w[i-16]) + sig0 + bitstring.BitArray(w[i-7]) + sig1)
-      w[i] = result
+      result = addition_32bits(BitArray(w[i-16]), sig0, BitArray(w[i-7]), sig1)
+      w[i] = Bits(result)
 
    return w
 
@@ -169,15 +166,13 @@ def main(filename):
    print("-"*32)
 
    #my_block = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"   
-   my_block = bitstring.Bits(bin="11000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011")
+   my_block = Bits(bin="00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")
    w = prepare_message_schedule(my_block)
    #print(w)
+   ext_w = Bits().join(w)
+   ext_w.pp()
 
    print("-"*32)
-
-   test_a = bitstring.BitArray(bin="11000000000000000001100100010100", length=32)
-   test_b = bitstring.BitArray(bin="11100101110101010100000100010101", length=32)
-   print(addition_32bits(test_a, test_b).bin)
 
 
 # -------------------------------------------    
