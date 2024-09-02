@@ -18,15 +18,18 @@ from bitstring import BitArray, Bits
 # 
 # Definition de la constante 'H'. Servira de base pour le hash initial 
 #
-#  Ce sont les 32 premiers bits de la partie décimale de la racine carrée des nombres premiers compris entre 2 et 19.
+#  Ce sont les 32 premiers bits de la partie décimale de la racine carrée des nombres premiers compris entre 2 et 19. Il y en a 8,
+#  soit 8*32 = 256 bits, la longueur d'un hash issu de SHA256.
 #
 
 H = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]
+H_bits = [Bits(uint=h, length=32) for h in H]
 
 # 
 # Definition de constantes 'K'. 
 #
-#  Ce sont les 32 premiers bits de la partie décimale de la racine cubique des nombres premiers compris entre 2 et 311.
+#  Ce sont les 32 premiers bits de la partie décimale de la racine cubique des nombres premiers compris entre 2 et 311. Il y en a 64, ce
+#  qui correspond à la longueur d'un bloc de 512 bits étendu à 2048 (64*32).
 #
 
 K = [ 0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -37,6 +40,7 @@ K = [ 0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x
    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2]
+K_bits = [Bits(uint=k, length=32) for k in K]
 
 
 # -------------------------------------------    
@@ -151,26 +155,78 @@ def prepare_message_schedule(block):
 def main(filename):
 # -------------------------------------------    
 
+   global H
+
    message = lire_fichier_binaire(filename)
    padded_message_bits = padding_message(message)
    blocks = decoupage_blocs(padded_message_bits)
 
    # Initialisation des variables de travail avec les racines carrées de H
+   # H représente le 'hash' initial
+
    a, b, c, d, e, f, g, h = H
 
+   """
+   print(a, b, c, d, e, f, g, h)
+   print(H)
+   a = 1
+   print(a, b, c, d, e, f, g, h)
+   print(H)
+   H = [a, b, c, d, e, f, g, h]
+   print(a, b, c, d, e, f, g, h)
+   print(H)
+   """
+
+
    print(f"Nombre total de blocs de 512 bits : {len(blocks)}")
+
    for i, block in enumerate(blocks):
+
+      # On construit w, bloc "étendu" (façon pâte à pizza)
+
       print(f"Bloc {i+1} : {block}")
-      # w = prepare_message_schedule(block)
+      w = prepare_message_schedule(block)
+
+      # Pour chaque groupe de 32 bits, on triture le hash
+      
+      for j, block_32 in enumerate(w):
+
+         print(f"Bloc {j} : {block_32}")
+
+         # Calcul de Σ1 = (e rotR 6) ⊕ (e rotR 11) ⊕ (e rotR 25)
+
+         terme_1 = BitArray(uint=e, length=32)
+         terme_2 = BitArray(uint=e, length=32)
+         terme_3 = BitArray(uint=e, length=32)
+
+         terme_1.ror(6)
+         terme_2.ror(11)
+         terme_3.ror(25)
+
+         SIG1 = terme_1 ^ terme_2 ^ terme_3
+
+         # Calcul de Ch (e, f, g) = (e ∧ f) ⊕ ((¬e) ∧ g)
+
+         terme_1 = BitArray(uint=e, length=32)
+         terme_2 = BitArray(uint=f, length=32)
+         terme_3 = BitArray(uint=g, length=32)
+
+         CH = (terme_1 & terme_2) ^ ((~terme_1) & terme_3)
+
+         # Calcul de T1 = h + Σ1 + Ch (e, f, g) + K[i] + w[i] 
+
+         T1 = addition_32bits(Bits(uint=h, length=32), SIG1, CH, K[j], block_32)
+         print(T1)
 
    print("-"*32)
 
-   #my_block = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"   
-   my_block = Bits(bin="00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")
-   w = prepare_message_schedule(my_block)
-   #print(w)
-   ext_w = Bits().join(w)
-   ext_w.pp()
+   # Exemple avec block "vide"
+   # my_block = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"   
+   # my_block = Bits(bin="00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")
+   # w = prepare_message_schedule(my_block)
+   # print(w)
+   # ext_w = Bits().join(w)
+   # ext_w.pp()
 
    print("-"*32)
 
