@@ -164,7 +164,7 @@ def main(filename):
    # Initialisation des variables de travail avec les racines carrées de H
    # H représente le 'hash' initial
 
-   a, b, c, d, e, f, g, h = H
+   a, b, c, d, e, f, g, h = H_bits
 
    """
    print(a, b, c, d, e, f, g, h)
@@ -195,9 +195,9 @@ def main(filename):
 
          # Calcul de Σ1 = (e rotR 6) ⊕ (e rotR 11) ⊕ (e rotR 25)
 
-         terme_1 = BitArray(uint=e, length=32)
-         terme_2 = BitArray(uint=e, length=32)
-         terme_3 = BitArray(uint=e, length=32)
+         terme_1 = BitArray(e)
+         terme_2 = BitArray(e)
+         terme_3 = BitArray(e)
 
          terme_1.ror(6)
          terme_2.ror(11)
@@ -207,15 +207,11 @@ def main(filename):
 
          # Calcul de Ch (e, f, g) = (e ∧ f) ⊕ ((¬e) ∧ g)
 
-         terme_1 = BitArray(uint=e, length=32)
-         terme_2 = BitArray(uint=f, length=32)
-         terme_3 = BitArray(uint=g, length=32)
-
-         CH = (terme_1 & terme_2) ^ ((~terme_1) & terme_3)
+         CH = (e & f) ^ ((~e) & g)
 
          # Calcul de T1 = h + Σ1 + Ch (e, f, g) + K[i] + w[i] 
 
-         T1 = addition_32bits(Bits(uint=h, length=32), SIG1, CH, K[j], block_32)
+         T1 = addition_32bits(h, SIG1, CH, K_bits[j], block_32)
          print(T1)
 
    print("-"*32)
