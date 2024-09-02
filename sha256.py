@@ -164,7 +164,6 @@ def main(filename):
    # Initialisation des variables de travail avec les racines carrées de H
    # H représente le 'hash' initial
 
-   a, b, c, d, e, f, g, h = H_bits
 
    """
    print(a, b, c, d, e, f, g, h)
@@ -191,6 +190,8 @@ def main(filename):
       
       for j, block_32 in enumerate(w):
 
+         a, b, c, d, e, f, g, h = H_bits
+         print("Hash initial du tour :", H_bits)
          print(f"Bloc {j} : {block_32}")
 
          # Calcul de Σ1 = (e rotR 6) ⊕ (e rotR 11) ⊕ (e rotR 25)
@@ -212,7 +213,50 @@ def main(filename):
          # Calcul de T1 = h + Σ1 + Ch (e, f, g) + K[i] + w[i] 
 
          T1 = addition_32bits(h, SIG1, CH, K_bits[j], block_32)
-         print(T1)
+
+         # Calcul de Σ0 = (a rotR 2) ⊕ (a rotR 13) ⊕ (a rotR 22)
+
+         terme_1 = BitArray(a)
+         terme_2 = BitArray(a)
+         terme_3 = BitArray(a)
+
+         terme_1.ror(2)
+         terme_2.ror(13)
+         terme_3.ror(22)
+
+         SIG0 = terme_1 ^ terme_2 ^ terme_3
+
+         # Calcul de Maj (a, b, c) = (a ∧ b) ⊕ (a ∧ c) ⊕ (b ∧ c)
+
+         MAJ = (a & b) ^ (a & c) ^ (b & c)
+
+         # Calcul de T2 = Σ0 + Maj (a, b, c) 
+
+         T2 = addition_32bits(SIG0, MAJ)
+
+         # On recalcule a, b, c, d, e, f, g, h
+
+         h = Bits(g)
+         g = Bits(f)
+         f = Bits(e)
+         e = addition_32bits(Bits(d), T1)
+         d = Bits(c)
+         c = Bits(b)
+         b = Bits(a)
+         a = addition_32bits(T1, T2)
+
+         # Pour finir ce tour, on recalcule le hash intermédiaire
+
+         H_bits[0] = addition_32bits(H_bits[0], a)
+         H_bits[1] = addition_32bits(H_bits[1], a)
+         H_bits[2] = addition_32bits(H_bits[2], a)
+         H_bits[3] = addition_32bits(H_bits[3], a)
+         H_bits[4] = addition_32bits(H_bits[4], a)
+         H_bits[5] = addition_32bits(H_bits[5], a)
+         H_bits[6] = addition_32bits(H_bits[6], a)
+         H_bits[7] = addition_32bits(H_bits[7], a)
+
+         print("Hash final du tour :", H_bits)
 
    print("-"*32)
 
