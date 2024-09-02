@@ -1,5 +1,6 @@
 #
-# Référence : https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf
+# Références : https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf
+#              https://sha256algorithm.com/
 #
 
 #
@@ -13,6 +14,7 @@
 # Imports
 #
 
+import hashlib
 from bitstring import BitArray, Bits
 
 # 
@@ -44,6 +46,23 @@ K_bits = [Bits(uint=k, length=32) for k in K]
 
 
 # -------------------------------------------    
+def calculer_sha256(fichier):
+# -------------------------------------------    
+
+    # Fonction de vérification du hash
+
+    sha256 = hashlib.sha256()
+
+    # Lire le fichier par petits blocs pour gérer les fichiers de grande taille
+    with open(fichier, "rb") as f:
+        for bloc in iter(lambda: f.read(4096), b""):
+            sha256.update(bloc)
+
+    # Retourner le haché final en hexadécimal
+    return sha256.hexdigest()
+
+
+# -------------------------------------------    
 def lire_fichier_binaire(nom_fichier):
 # -------------------------------------------    
 
@@ -67,11 +86,11 @@ def padding_message(message):
    original_length = len(message_bits)
 
    # Ajouter un '1' à la fin du message
-   message_bits.append('0x1')
+   message_bits.append(Bits(uint=1, length=1))
 
    # Ajouter des zéros jusqu'à ce que la longueur soit congrue à 448 bits modulo 512
    while len(message_bits) % 512 != 448:
-      message_bits.append('0x0')
+      message_bits.append(Bits(uint=0, length=1))
 
    # Ajouter la longueur originale du message sur 64 bits à la fin
    message_bits.append(Bits(int64=original_length))
@@ -109,7 +128,7 @@ def prepare_message_schedule(block):
 # -------------------------------------------    
 
    '''
-      Prépare le message étendu de 64 mots pour un bloc de 512 bits.
+      Prépare le message étendu de 64 mots pour un bloc de 512 bits. Validé. 
    '''
 
    # w[0..15] = les mots de 32 bits du bloc actuel
@@ -147,6 +166,7 @@ def prepare_message_schedule(block):
 
       result = addition_32bits(BitArray(w[i-16]), sig0, BitArray(w[i-7]), sig1)
       w[i] = Bits(result)
+      pass
 
    return w
 
@@ -155,27 +175,12 @@ def prepare_message_schedule(block):
 def main(filename):
 # -------------------------------------------    
 
-   global H
-
    message = lire_fichier_binaire(filename)
    padded_message_bits = padding_message(message)
    blocks = decoupage_blocs(padded_message_bits)
 
    # Initialisation des variables de travail avec les racines carrées de H
    # H représente le 'hash' initial
-
-
-   """
-   print(a, b, c, d, e, f, g, h)
-   print(H)
-   a = 1
-   print(a, b, c, d, e, f, g, h)
-   print(H)
-   H = [a, b, c, d, e, f, g, h]
-   print(a, b, c, d, e, f, g, h)
-   print(H)
-   """
-
 
    print(f"Nombre total de blocs de 512 bits : {len(blocks)}")
 
@@ -188,10 +193,11 @@ def main(filename):
 
       # Pour chaque groupe de 32 bits, on triture le hash
       
+      a, b, c, d, e, f, g, h = H_bits
+      print("Hash initial du block :", H_bits)
+
       for j, block_32 in enumerate(w):
 
-         a, b, c, d, e, f, g, h = H_bits
-         print("Hash initial du tour :", H_bits)
          print(f"Bloc {j} : {block_32}")
 
          # Calcul de Σ1 = (e rotR 6) ⊕ (e rotR 11) ⊕ (e rotR 25)
@@ -245,18 +251,18 @@ def main(filename):
          b = Bits(a)
          a = addition_32bits(T1, T2)
 
-         # Pour finir ce tour, on recalcule le hash intermédiaire
+      # On recalcule le hash intermédiaire avant de passer au bloc suivant
 
-         H_bits[0] = addition_32bits(H_bits[0], a)
-         H_bits[1] = addition_32bits(H_bits[1], a)
-         H_bits[2] = addition_32bits(H_bits[2], a)
-         H_bits[3] = addition_32bits(H_bits[3], a)
-         H_bits[4] = addition_32bits(H_bits[4], a)
-         H_bits[5] = addition_32bits(H_bits[5], a)
-         H_bits[6] = addition_32bits(H_bits[6], a)
-         H_bits[7] = addition_32bits(H_bits[7], a)
+      H_bits[0] = addition_32bits(H_bits[0], a)
+      H_bits[1] = addition_32bits(H_bits[1], b)
+      H_bits[2] = addition_32bits(H_bits[2], c)
+      H_bits[3] = addition_32bits(H_bits[3], d)
+      H_bits[4] = addition_32bits(H_bits[4], e)
+      H_bits[5] = addition_32bits(H_bits[5], f)
+      H_bits[6] = addition_32bits(H_bits[6], g)
+      H_bits[7] = addition_32bits(H_bits[7], h)
 
-         print("Hash final du tour :", H_bits)
+      print("Hash final du bloc :", H_bits)
 
    print("-"*32)
 
@@ -270,11 +276,16 @@ def main(filename):
 
    print("-"*32)
 
+   print(calculer_sha256(filename))
+
+   print("-"*32)
+
 
 # -------------------------------------------    
 #     main()
 # ------------------------------------------- 
 
 if __name__ == "__main__":
-   filename = "test.bin"  # Remplacez par le nom de votre fichier
+   filename = "vide.bin"  # Remplacez par le nom de votre fichier. SHA vide = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+   #filename = "test.bin"  # Remplacez par le nom de votre fichier. SHA = 1532ca899c8c577bc3132c844209d797aa22d239a917d8741685ccb842dc8155
    main(filename)
