@@ -194,11 +194,11 @@ def main(filename):
       # Pour chaque groupe de 32 bits, on triture le hash
       
       a, b, c, d, e, f, g, h = H_bits
-      print("Hash initial du block :", H_bits)
+      ## print("Hash initial du block :", H_bits)
 
       for j, block_32 in enumerate(w):
 
-         print(f"Bloc {j} : {block_32}")
+         ## print(f"Bloc {j} : {block_32}")
 
          # Calcul de Σ1 = (e rotR 6) ⊕ (e rotR 11) ⊕ (e rotR 25)
 
@@ -262,10 +262,11 @@ def main(filename):
       H_bits[6] = addition_32bits(H_bits[6], g)
       H_bits[7] = addition_32bits(H_bits[7], h)
 
-      print("Hash final du bloc :", H_bits)
+      ## print("Hash final du bloc :", H_bits)
 
    print("-"*32)
 
+   print("Hash calculé par l'algorithme ........................", Bits().join(H_bits).hex)
    # Exemple avec block "vide"
    # my_block = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"   
    # my_block = Bits(bin="00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")
@@ -276,7 +277,7 @@ def main(filename):
 
    print("-"*32)
 
-   print(calculer_sha256(filename))
+   print("Hash calculé par la bibliothèque Python 'hashlib' ....", calculer_sha256(filename))
 
    print("-"*32)
 
@@ -286,6 +287,6 @@ def main(filename):
 # ------------------------------------------- 
 
 if __name__ == "__main__":
-   filename = "vide.bin"  # Remplacez par le nom de votre fichier. SHA vide = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-   #filename = "test.bin"  # Remplacez par le nom de votre fichier. SHA = 1532ca899c8c577bc3132c844209d797aa22d239a917d8741685ccb842dc8155
+   #filename = "vide.bin"  # Remplacez par le nom de votre fichier. SHA vide = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+   filename = "test.bin"  # Remplacez par le nom de votre fichier. SHA = 1532ca899c8c577bc3132c844209d797aa22d239a917d8741685ccb842dc8155
    main(filename)
